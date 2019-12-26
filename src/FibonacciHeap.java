@@ -18,6 +18,8 @@ public class FibonacciHeap {
     private HeapNodeList trees;
     private HeapNode min; // Pointer to the minimal node in the heap.
     private int size; // How many nodes are in this heap.
+    private static int totalLinks = 0;
+    private static int totalCuts = 0;
 
     public FibonacciHeap() {
         trees = new HeapNodeList();
@@ -57,6 +59,34 @@ public class FibonacciHeap {
     public void deleteMin() {
         return; // should be replaced by student code
 
+    }
+
+    /**
+     * Given two binomial trees A and B, of the exact same rank R,
+     * this function will link them together into a new binomial
+     * tree of rank R+1 in O(1).
+     *
+     * @param A
+     * @param B
+     * @pre A != null && B != null
+     * @pre !A.isEmpty() && !B.isEmpty()
+     * @pre A.findMin() < B.findMin() || A.findMin() > B.findMin()
+     */
+    private HeapNode LinkTrees(HeapNode A, HeapNode B) {
+        int keyA = A.getKey();
+        int keyB = B.getKey();
+        HeapNode min, other;
+        if (keyA < keyB) {
+            min = A;
+            other = B;
+        } else {
+            min = B;
+            other = A;
+        }
+        HeapNodeList minChildren = min.getChildren();
+        minChildren.addNode(other);
+        min.setRank(min.getRank() + 1);
+        return min;
     }
 
     /**
@@ -192,7 +222,7 @@ public class FibonacciHeap {
         protected int key;
         protected int rank; // number of children
         protected boolean mark;
-        protected HeapNode child;
+        protected HeapNodeList children;
         protected HeapNode next;
         protected HeapNode prev;
         protected HeapNode parent;
@@ -230,28 +260,32 @@ public class FibonacciHeap {
             this.mark = mark;
         }
 
-        public HeapNode getChild() {
-            return child;
+        public HeapNodeList getChildren() {
+            return children;
         }
 
-        public void setChild(HeapNode child) {
-            this.child = child;
+        public void setChildren(HeapNodeList children) {
+            this.children = children;
+        }
+
+        public void setDummy(boolean dummy) {
+            this.dummy = dummy;
         }
 
         public HeapNode getNext() {
+            HeapNode next = this.next;
+            // Skip the sentinel.
+            if (next.isDummy())
+                next = next.next;
             return next;
         }
 
-        public void setNext(HeapNode next) {
-            this.next = next;
-        }
-
         public HeapNode getPrev() {
+            HeapNode prev = this.prev;
+            // Skip the sentinel.
+            if (prev.isDummy())
+                prev = prev.prev;
             return prev;
-        }
-
-        public void setPrev(HeapNode prev) {
-            this.prev = prev;
         }
 
         public HeapNode getParent() {
@@ -260,6 +294,14 @@ public class FibonacciHeap {
 
         public void setParent(HeapNode parent) {
             this.parent = parent;
+        }
+
+        public HeapNode getRightmostChild() {
+            return this.children.getLast();
+        }
+
+        public HeapNode getLeftmostChild() {
+            return this.children.getFirst();
         }
 
         public boolean isDummy() {
@@ -312,13 +354,21 @@ public class FibonacciHeap {
 
         protected void insert(int key) {
             HeapNode node = new HeapNode(key);
+            int rank = 0;
+            if (length != 0)
+                rank = this.getFirst().getRank();
+            node.setRank(rank);
+            addNode(node);
+        }
+
+        protected void addNode(HeapNode node) {
             HeapNode last = sentinel.getPrev();
-            last.setNext(node);
-            node.setNext(sentinel);
-            sentinel.setPrev(node);
+            last.next = node;
+            node.next = sentinel;
+            sentinel.prev = node;
             if (sentinel.getPrev() == sentinel)
-                sentinel.setPrev(node);
-            node.setPrev(last);
+                sentinel.prev = node;
+            node.prev = last;
             length++;
         }
 
@@ -328,15 +378,15 @@ public class FibonacciHeap {
             HeapNode last = this.sentinel.getPrev();
             HeapNode first = this.sentinel.getNext();
             if (last == node)
-                sentinel.setPrev(last.getPrev());
+                sentinel.prev = last.getPrev();
             if (first == node)
-                sentinel.setNext(first.getNext());
+                sentinel.next = first.getNext();
             HeapNode before = node.getPrev();
             HeapNode after = node.getNext();
-            before.setNext(after);
-            after.setPrev(before);
-            node.setNext(null);
-            node.setPrev(null);
+            before.next = after;
+            after.prev = before;
+            node.next = null;
+            node.prev = null;
             length--;
         }
 
@@ -346,15 +396,15 @@ public class FibonacciHeap {
             HeapNode listFirst = list.getFirst();
             HeapNode listLast = list.getLast();
 
-            thisLast.setNext(listFirst); // Instead of this.sentinel
-            listFirst.setPrev(thisLast); // Instead of list.sentinel
-            sentinel.setPrev(listLast); // Instead of thisLast
-            listLast.setNext(sentinel); // Instead of list.sentinel
+            thisLast.next = listFirst; // Instead of this.sentinel
+            listFirst.prev = thisLast; // Instead of list.sentinel
+            sentinel.prev = listLast; // Instead of thisLast
+            listLast.next = sentinel; // Instead of list.sentinel
             this.length += list.getLength();
 
             // We don't want list to be used later.
-            list.sentinel.setNext(null);
-            list.sentinel.setPrev(null);
+            list.sentinel.next = null;
+            list.sentinel.prev = null;
             list.length = 0;
         }
 
@@ -372,6 +422,20 @@ public class FibonacciHeap {
 
         protected Iterator<HeapNode> iterator() {
             return this.getFirst().getListIterator();
+        }
+
+        protected void setNodeLeft(HeapNode node, HeapNode newLeft) {
+            HeapNode oldLeft = node.prev;
+            oldLeft.next = newLeft;
+            newLeft.next = node;
+            newLeft.prev = oldLeft;
+        }
+
+        protected void setNodeRight(HeapNode node, HeapNode newRight) {
+            HeapNode oldRight = node.next;
+            oldRight.prev = newRight;
+            newRight.prev = node;
+            newRight.next = oldRight;
         }
     }
 }
