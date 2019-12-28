@@ -57,8 +57,11 @@ public class FibonacciHeap {
      * Delete the node containing the minimum key.
      */
     public void deleteMin() {
-        return; // should be replaced by student code
-
+        HeapNode min = this.findMin();
+        this.trees.delete(min);
+        HeapNodeList subTrees = min.getChildren();
+        this.trees.concat(subTrees);
+        consolidate();
     }
 
     /**
@@ -70,9 +73,11 @@ public class FibonacciHeap {
      * @param B
      * @pre A != null && B != null
      * @pre !A.isEmpty() && !B.isEmpty()
-     * @pre A.findMin() < B.findMin() || A.findMin() > B.findMin()
+     * @pre A.findMin().getKey() < B.findMin().getKey() || A.findMin().getKey() > B.findMin().getKey()
+     * @pre A.getParent() == null && B.getParent() == null
+     * @pre A.getRank() == B.getRank()
      */
-    private HeapNode LinkTrees(HeapNode A, HeapNode B) {
+    private HeapNode linkTrees(HeapNode A, HeapNode B) {
         int keyA = A.getKey();
         int keyB = B.getKey();
         HeapNode min, other;
@@ -83,10 +88,50 @@ public class FibonacciHeap {
             min = B;
             other = A;
         }
+        // At this point we can assume min.getKey() is smaller than other.getKey().
         HeapNodeList minChildren = min.getChildren();
-        minChildren.addNode(other);
+        minChildren.insertFirst(other);
+        other.parent = min;
         min.setRank(min.getRank() + 1);
         return min;
+    }
+
+    /**
+     * Consolidates the list of trees in this heap, such that
+     * there the heap does not have two trees of the same rank anymore.
+     */
+    private void consolidate() {
+        Iterator<HeapNode> iter = trees.iterator();
+        int length = (int) Math.ceil(Math.log(this.size) / Math.log(2));
+        HeapNode[] bucket = new HeapNode[length];
+        HeapNode minimum = null;
+        HeapNodeList newTrees = new HeapNodeList();
+
+        HeapNode tree = null;
+        while (iter.hasNext()) {
+            if (tree == null)
+                tree = iter.next();
+            int treeRank = tree.getRank();
+            HeapNode existingTree = bucket[treeRank];
+            if (existingTree == null) {
+                bucket[treeRank] = tree;
+                if (iter.hasNext())
+                    tree = iter.next();
+            } else {
+                HeapNode mergedTree = linkTrees(tree, existingTree);
+                tree = mergedTree;
+            }
+        }
+
+        for (int i = 0; i < length; i++) {
+            HeapNode bucketTree = bucket[i];
+            newTrees.insert(bucketTree);
+            if (minimum == null || bucketTree.getKey() < minimum.getKey())
+                minimum = bucketTree;
+        }
+
+        this.min = minimum;
+        this.trees = newTrees;
     }
 
     /**
@@ -358,10 +403,10 @@ public class FibonacciHeap {
             if (length != 0)
                 rank = this.getFirst().getRank();
             node.setRank(rank);
-            addNode(node);
+            insert(node);
         }
 
-        protected void addNode(HeapNode node) {
+        protected void insert(HeapNode node) {
             HeapNode last = sentinel.getPrev();
             last.next = node;
             node.next = sentinel;
@@ -370,6 +415,10 @@ public class FibonacciHeap {
                 sentinel.prev = node;
             node.prev = last;
             length++;
+        }
+
+        protected void insertFirst(HeapNode node) {
+            insertFromLeft(getFirst(), node);
         }
 
         protected void delete(HeapNode node) {
@@ -424,18 +473,38 @@ public class FibonacciHeap {
             return this.getFirst().getListIterator();
         }
 
-        protected void setNodeLeft(HeapNode node, HeapNode newLeft) {
+        /**
+         * Inserts newLeft between node.getPrev() and node.
+         *
+         * @param node
+         * @param newLeft
+         * @pre newLeft doesn't belong to this list.
+         * @pre node != null && newLeft != null
+         * @post newLeft.getNext() == node && newLeft == node.getPrev()
+         */
+        protected void insertFromLeft(HeapNode node, HeapNode newLeft) {
             HeapNode oldLeft = node.prev;
             oldLeft.next = newLeft;
             newLeft.next = node;
             newLeft.prev = oldLeft;
+            this.length++;
         }
 
-        protected void setNodeRight(HeapNode node, HeapNode newRight) {
+        /**
+         * Inserts newLeft between node and node.getRight().
+         *
+         * @param node
+         * @param newRight
+         * @pre newRight doesn't belong to this list.
+         * @pre node != null && newRight != null
+         * @post node.getNext() == newRight && node == newRight.getPrev()
+         */
+        protected void insertFromRight(HeapNode node, HeapNode newRight) {
             HeapNode oldRight = node.next;
             oldRight.prev = newRight;
             newRight.prev = node;
             newRight.next = oldRight;
+            this.length++;
         }
     }
 }
