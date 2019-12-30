@@ -44,6 +44,9 @@ public class FibonacciHeap {
      * public HeapNode insert(int key)
      * <p>
      * Creates a node (of type HeapNode) which contains the given key, and inserts it into the heap.
+     *
+     * @param key the key being added to the heap.
+     * @return new heap with that one key.
      */
     public HeapNode insert(int key) {
         HeapNode node = new HeapNode(key);
@@ -53,8 +56,8 @@ public class FibonacciHeap {
     private void totalTreesInspector(int delta, String reason) {
         int before = this.totalTrees;
         this.totalTrees += delta;
-        String message = "Number of trees changed from " + before + " to " + this.totalTrees + "\n" +
-                "as a result of \"" + reason + "\".";
+        /*String message = "Number of trees changed from " + before + " to " + this.totalTrees + "\n" +
+                "as a result of \"" + reason + "\".";*/
     }
 
     private HeapNode insert(HeapNode node) {
@@ -118,7 +121,7 @@ public class FibonacciHeap {
             size--;
             totalTreesInspector(-1, "the minimum was deleted, so there's one less tree.");
             totalTreesInspector(min.rank, "the minimum was of rank " + min.rank + " which is also the number of children it had.");
-            /**
+            /*
              * At this point the minimum doesn't necessarily points
              * to th minimal node, but the consolidation is going to
              * fix it.
@@ -133,13 +136,16 @@ public class FibonacciHeap {
      * this function will link them together into a new binomial
      * tree of rank R+1 in O(1).
      *
-     * @param A
-     * @param B
+     * @param A binomial tree of rank r
+     * @param B binomial tree of rank r
      * @pre A != null && B != null
      * @pre !A.isEmpty() && !B.isEmpty()
      * @pre A.findMin().getKey() < B.findMin().getKey() || A.findMin().getKey() > B.findMin().getKey()
      * @pre A.getParent() == null && B.getParent() == null
      * @pre A.getRank() == B.getRank()
+     * @post (A.getLeftmostChild () == B && A.getRank() == r+1 && A.getParent() == null) ||
+     * || (B.getLeftmostChild() == A && B.getRank() == r+1 && B.getParent() == null)
+     * @
      */
     private HeapNode linkTrees(HeapNode A, HeapNode B) {
         int keyA = A.getKey();
@@ -164,13 +170,23 @@ public class FibonacciHeap {
         other.parent = min;
         min.rank = min.getRank() + 1;
         totalLinks++;
+        min.parent = null;
         totalTreesInspector(-1, "two trees had been linked into one.");
         return min;
     }
 
     /**
      * Consolidates the list of trees in this heap, such that
-     * there the heap does not have two trees of the same rank anymore.
+     * the heap does not have two trees of the same rank anymore.
+     * IF the following conditions are met before running the function:
+     * The heap contains the following keys (key 1,...,key n)
+     * The heap is constructed by the following list of independent binomial trees (T1,...,Tk)
+     * m is the binary representation of k, s.t. the MSB is the rightmost bit.
+     * m=m(1)m(2)...m(j), j = Math.Ceil(Math.log(k+1)/Math.log(2))
+     * THEN the following conditions will be applied:
+     * The heap contains the following keys (key 1,...,key n)
+     * The heap is constructed by a list of binomial trees (B1,...,Bj) s.t. Bi != null iff m(i) != 0
+     * this.min.getKey() <= Bi.getKey() for all B1,...,Bj
      */
     private void consolidate() {
         Iterator<HeapNode> iter = this.min.iterator();
@@ -193,8 +209,7 @@ public class FibonacciHeap {
                     tree = null;
             } else {
                 bucket[treeRank] = null;
-                HeapNode mergedTree = linkTrees(tree, existingTree);
-                tree = mergedTree;
+                tree = linkTrees(tree, existingTree);
             }
         }
 
@@ -238,6 +253,12 @@ public class FibonacciHeap {
      * public void meld (FibonacciHeap heap2)
      * <p>
      * Meld the heap with heap2
+     *
+     * @param heap2 the heap being merged
+     * @post this.getLeftmostChild().getPrev() == heap2.getRightmostChild()
+     * @post this.getRightmostChild().getNext() == heap2.getLeftmostChild()
+     * @post this.getRightmostChild().getNext() == heap2.getLeftmostChild()
+     * @post this.getRightmostChild() == heap2.getLeftmostChild().getPrev()
      */
     public void meld(FibonacciHeap heap2) {
         // First, we have to update the pointer to the minimum node.
@@ -290,7 +311,7 @@ public class FibonacciHeap {
         int[] ranksCount = new int[length];
         // This is a good opportunity to re-count the number of trees in the heap,
         // without increasing time complexity order.
-        totalTreesInspector(this.totalTrees, "re-coount during countersRep()");
+        totalTreesInspector(this.totalTrees, "re-count during countersRep()");
         this.totalTrees = 0;
         for (Iterator<HeapNode> iter = this.min.iterator(); iter.hasNext(); ) {
             HeapNode node = iter.next();
@@ -301,6 +322,10 @@ public class FibonacciHeap {
         return ranksCount;
     }
 
+    /**
+     * @return a int array ranksCount, s.t. for each index 0<=i<ranksCount.length:
+     * ranksCount[i] == the number of trees and subtrees of rank i in the heap.
+     */
     public int[] countAllRanks() {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
         int[] ranksCount = new int[length];
@@ -317,9 +342,7 @@ public class FibonacciHeap {
 
     private int[] countAllRanksHelper(int[] ranksCount, HeapNode root) {
         int rootRank = root.getRank();
-        if (rootRank == 0 || root.child == null) {
-            // Nothing.
-        } else {
+        if (rootRank != 0 && root.child != null) {
             for (Iterator<HeapNode> iter = root.child.iterator(); iter.hasNext(); ) {
                 HeapNode node = iter.next();
                 ranksCount = countAllRanksHelper(ranksCount, node);
@@ -333,6 +356,9 @@ public class FibonacciHeap {
      * public void delete(HeapNode x)
      * <p>
      * Deletes the node x from the heap.
+     *
+     * @param x the node being removed from the heap.
+     * @post x is no longer part of the heap.
      */
     public void delete(HeapNode x) {
         int delta = x.getKey() - this.min.getKey() + 1; // >= 0
@@ -346,8 +372,8 @@ public class FibonacciHeap {
      * The function decreases the key of the node x by delta. The structure of the heap should be updated
      * to reflect this chage (for example, the cascading cuts procedure should be applied if needed).
      *
-     * @param x
-     * @param delta
+     * @param x the node which its key is being decreased.
+     * @param delta the size of decrement.
      * @pre x != null && delta >= 0 && [x.getKey() == k for some 0 <= k]
      * @post x.getKey() == k - delta
      */
@@ -392,7 +418,7 @@ public class FibonacciHeap {
         cut(x, parent);
         HeapNode grandparent = parent.parent;
         if (grandparent != null) {
-            if (parent.mark == false) {
+            if (!parent.mark) {
                 parent.mark = true;
                 totalMarkedTrees++;
             } else
@@ -475,10 +501,6 @@ public class FibonacciHeap {
             return key;
         }
 
-        public void setKey(int key) {
-            this.key = key;
-        }
-
         public int getRank() {
             return rank;
         }
@@ -502,7 +524,7 @@ public class FibonacciHeap {
         /**
          * Inserts newLeft between this.getPrev() and this.
          *
-         * @param newLeft
+         * @param newLeft the node being attached to the left of this node.
          * @pre newLeft doesn't belong to this list.
          * @pre newLeft != null
          * @post newLeft.getNext() == this && newLeft == this.getPrev()
@@ -519,7 +541,7 @@ public class FibonacciHeap {
         /**
          * Inserts newLeft between this and this.getRight().
          *
-         * @param newRight
+         * @param newRight the node being attached to the right of this node.
          * @pre newRight doesn't belong to this list.
          * @pre newRight != null
          * @post this.getNext() == newRight && this == newRight.getPrev()
@@ -541,7 +563,7 @@ public class FibonacciHeap {
          * <p>
          * It does not modify the size property of this heap.
          *
-         * @param trees
+         * @param trees the list of trees being concatenated after this node.
          */
         protected void concat(HeapNode trees) {
             if (trees == null)
@@ -565,7 +587,7 @@ public class FibonacciHeap {
          * <p>
          * It does not modify the size property of this heap.
          *
-         * @param trees
+         * @param trees the list of trees being concatenated before this node.
          */
         protected void reverseConcat(HeapNode trees) {
             if (trees == null)
@@ -581,12 +603,18 @@ public class FibonacciHeap {
             listFirst.prev = thisFirst; // LL <- FF
         }
 
+        /**
+         * @return the last child of this node (rightmost).
+         */
         public HeapNode getRightmostChild() {
             if (this.child == null)
                 return null;
             return this.child.prev;
         }
 
+        /**
+         * @return the first child of this node (leftmost).
+         */
         public HeapNode getLeftmostChild() {
             if (this.child == null)
                 return null;
