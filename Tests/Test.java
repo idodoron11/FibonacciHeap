@@ -324,16 +324,18 @@ public class Test {
         String test = "test7";
         heap = new Heap();
         fibonacciHeap = new FibonacciHeap();
-        addKeys(1000);
-        addKeysReverse(3000);
+        addKeys(1000); // adds 1000,...,1999 to both heaps.
+        addKeysReverse(3000); // adds 3999,...,3001,3000 to both heaps.
 
         ArrayList<FibonacciHeap.HeapNode> nodes = new ArrayList<>();
 
-        for (int i = 2000; i < 3000; i++) {
+        // 1000 keys are added.
+        for (int i = 2000; i < 3000; i++) { // adds 2000,...,2999 to both heaps, and also keeps pointers to the nodes.
             heap.insert(i);
             nodes.add(fibonacciHeap.insert(i));
         }
 
+        // Deletes 2000,...,2500
         for (int i = 2000; i < 2500; i++) {
             int heapMin = heap.findMin();
             int fiboHeapMin = fibonacciHeap.findMin().getKey();
@@ -344,7 +346,8 @@ public class Test {
                 return;
             }
             heap.delete(i);
-            fibonacciHeap.delete(nodes.get(i - 2000));
+            FibonacciHeap.HeapNode node = nodes.get(i - 2000);
+            fibonacciHeap.delete(node);
         }
 
         while (!heap.empty()) {
@@ -808,10 +811,13 @@ public class Test {
         }
 
         potential = fibonacciHeap.potential();
+        int totalCutsAfter = FibonacciHeap.totalCuts();
+        int totalLinksAfter = FibonacciHeap.totalLinks();
+        int numberOfTreesWithRank0 = fibonacciHeap.countersRep()[0];
         if (potential != treeSize ||
-                FibonacciHeap.totalCuts() - totalCuts != treeSize - 1 ||
-                FibonacciHeap.totalLinks() - links != 0 ||
-                fibonacciHeap.countersRep()[0] != treeSize ||
+                totalCutsAfter - totalCuts != treeSize - 1 ||
+                totalLinksAfter - links != 0 ||
+                numberOfTreesWithRank0 != treeSize ||
                 noCascading)
             bugFound(test);
     }
@@ -953,14 +959,14 @@ public class Test {
         grade -= testScore;
     }
 
-    static void addKeys(int start) {
+    static void addKeys(int start) {    // adds 1000 keys: start, start+1,...,start+999
         for (int i = 0; i < 1000; i++) {
             heap.insert(start + i);
             fibonacciHeap.insert(start + i);
         }
     }
 
-    static void addKeysReverse(int start) {
+    static void addKeysReverse(int start) { // adds 1000 keys: start+999, ...,start+1, start
         for (int i = 999; i >= 0; i--) {
             heap.insert(start + i);
             fibonacciHeap.insert(start + i);
