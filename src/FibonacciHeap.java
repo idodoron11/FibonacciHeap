@@ -46,7 +46,7 @@ public class FibonacciHeap {
      * Creates a node (of type HeapNode) which contains the given key, and inserts it into the heap.
      *
      * @param key the key being added to the heap.
-     * @return new heap with that one key.
+     * @return a new heap with that one key.
      */
     public HeapNode insert(int key) {
         HeapNode node = new HeapNode(key);
@@ -83,7 +83,7 @@ public class FibonacciHeap {
     /**
      * public void deleteMin()
      * <p>
-     * Delete the node containing the minimum key.
+     * Deletes the node containing the minimum key.
      */
     public void deleteMin() {
         if (this.isEmpty())
@@ -243,7 +243,8 @@ public class FibonacciHeap {
     /**
      * public HeapNode findMin()
      * <p>
-     * Return the node of the heap whose key is minimal.
+     *
+     * @return the node of the heap whose key is minimal.
      */
     public HeapNode findMin() {
         return this.min;
@@ -252,7 +253,7 @@ public class FibonacciHeap {
     /**
      * public void meld (FibonacciHeap heap2)
      * <p>
-     * Meld the heap with heap2
+     * Melds the heap with heap2
      *
      * @param heap2 the heap being merged
      * @post this.getLeftmostChild().getPrev() == heap2.getRightmostChild()
@@ -295,7 +296,8 @@ public class FibonacciHeap {
     /**
      * public int size()
      * <p>
-     * Return the number of elements in the heap
+     *
+     * @return the number of elements in the heap
      */
     public int size() {
         return this.size;
@@ -304,7 +306,8 @@ public class FibonacciHeap {
     /**
      * public int[] countersRep()
      * <p>
-     * Return a counters array, where the value of the i-th entry is the number of trees of order i in the heap.
+     *
+     * @return a counters array, where the value of the i-th entry is the number of trees of order i in the heap.
      */
     public int[] countersRep() {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
@@ -323,8 +326,7 @@ public class FibonacciHeap {
     }
 
     /**
-     * @return a int array ranksCount, s.t. for each index 0<=i<ranksCount.length:
-     * ranksCount[i] == the number of trees and subtrees of rank i in the heap.
+     * @return a int array ranksCount, s.t. for each index 0<=i<=ranksCount.length-1: ranksCount[i] == the number of trees and subtrees of rank i in the heap.
      */
     public int[] countAllRanks() {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
@@ -372,7 +374,7 @@ public class FibonacciHeap {
      * The function decreases the key of the node x by delta. The structure of the heap should be updated
      * to reflect this chage (for example, the cascading cuts procedure should be applied if needed).
      *
-     * @param x the node which its key is being decreased.
+     * @param x     the node whose key is being decreased.
      * @param delta the size of decrement.
      * @pre x != null && delta >= 0 && [x.getKey() == k for some 0 <= k]
      * @post x.getKey() == k - delta
@@ -429,9 +431,9 @@ public class FibonacciHeap {
     /**
      * public int potential()
      * <p>
-     * This function returns the current potential of the heap, which is:
-     * Potential = #trees + 2*#marked
      * The potential equals to the number of trees in the heap plus twice the number of marked nodes in the heap.
+     *
+     * @return the current potential of the heap, which is: #trees + 2*#marked
      */
     public int potential() {
         return totalTrees + 2 * totalMarkedTrees; // should be replaced by student code
@@ -440,10 +442,11 @@ public class FibonacciHeap {
     /**
      * public static int totalLinks()
      * <p>
-     * This static function returns the total number of link operations made during the run-time of the program.
      * A link operation is the operation which gets as input two trees of the same rank, and generates a tree of
      * rank bigger by one, by hanging the tree which has larger value in its root on the tree which has smaller value
-     * in its root.
+     * its root.
+     *
+     * @return the total number of link operations made during the run-time of the program.
      */
     public static int totalLinks() {
         return totalLinks;
@@ -452,8 +455,9 @@ public class FibonacciHeap {
     /**
      * public static int totalCuts()
      * <p>
-     * This static function returns the total number of cut operations made during the run-time of the program.
      * A cut operation is the operation which diconnects a subtree from its parent (during decreaseKey/delete methods).
+     *
+     * @return the total number of cut operations made during the run-time of the program.
      */
     public static int totalCuts() {
         return totalCuts;
@@ -462,15 +466,63 @@ public class FibonacciHeap {
     /**
      * public static int[] kMin(FibonacciHeap H, int k)
      * <p>
-     * This static function returns the k minimal elements in a binomial tree H.
      * The function should run in O(k(logk + deg(H)).
+     *
+     * @param H a single-tree binomial heap of rank r.
+     * @param k the number of keys fetched from the tree.
+     * @return the k minimal elements in a binomial tree H.
      */
     public static int[] kMin(FibonacciHeap H, int k) {
-        if (H == null || H.isEmpty() || k > 0)
+        if (H == null || H.isEmpty() || k <= 0)
             return new int[0];
-        if (k > H.size())
-            k = H.size();
-        return new int[0];
+        HeapNode tree = H.findMin();
+        int rank = tree.getRank();
+        int size = H.size();
+        size = (int) Math.min(size, Math.pow(2, rank));
+        if (k > size)
+            k = size;
+        int[] result = new int[k];
+        FibonacciHeap heap = extractToHeap(tree, k); // This process takes O(n) at most.
+        // If the heap contains r keys, than the amortized cost of deleteMin() is O(log r).
+        // Thus, the total amortized cost of the loop is O(2k) + O(k(log r)) = O(k(log r)) <= O(k(log n))
+        for (int i = 0; i < result.length && !heap.isEmpty(); i++) {
+            int minimum = heap.findMin().getKey();
+            heap.deleteMin();
+            result[i] = minimum;
+        }
+
+        return result;
+    }
+
+    private static FibonacciHeap extractToHeap(HeapNode node, int k) {
+        FibonacciHeap heap = new FibonacciHeap();
+        extractToHeap(node, heap, k);
+        return heap;
+    }
+
+    /**
+     * @param node the root of the binomial tree.
+     * @return A new heap, with copies of the keys node holds.
+     */
+    public static FibonacciHeap extractToHeap(HeapNode node) {
+        int k = (int) Math.pow(2, node.getRank());
+        return extractToHeap(node, k);
+    }
+
+    private static void extractToHeap(HeapNode node, FibonacciHeap heap, int k) {
+        if (node == null || heap == null)
+            return;
+        HeapNode parent = node.getParent();
+        int numberOfItemsInThisDepth = 1;
+        if (parent != null)
+            numberOfItemsInThisDepth = parent.getRank();
+        int heapSizeAfter = heap.size() + numberOfItemsInThisDepth;
+        for (Iterator<HeapNode> iter = node.iterator(); iter.hasNext(); ) {
+            HeapNode next = iter.next();
+            heap.insert(next.getKey());
+            if (heapSizeAfter < k && next.child != null)
+                extractToHeap(next.child, heap, k);
+        }
     }
 
     /**
@@ -622,7 +674,7 @@ public class FibonacciHeap {
         }
 
         /**
-         * Returns a new iterator, to iterate over all the nodes at the same depth in the tree.
+         * @return a new iterator, to iterate over all the nodes at the same depth in the tree.
          * If $this is a root, then the iteration will be over all the roots in the heap.
          */
         public Iterator<HeapNode> iterator() {
