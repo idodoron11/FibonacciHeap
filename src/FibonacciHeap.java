@@ -7,14 +7,6 @@ import java.util.Iterator;
  */
 public class FibonacciHeap {
 
-    /**
-     * public boolean isEmpty()
-     * <p>
-     * precondition: none
-     * <p>
-     * The method returns true if and only if the heap
-     * is empty.
-     */
     private HeapNode min; // Pointer to the minimal node in the heap.
     // The min is assumed to be the "first" tree in the circular list of trees.
     private int size; // How many nodes are in this heap.
@@ -23,6 +15,9 @@ public class FibonacciHeap {
     private int totalTrees = 0;
     private int totalMarkedTrees = 0;
 
+    /**
+     * @comp O(1)
+     */
     public FibonacciHeap() {
         min = null;
         size = 0;
@@ -36,17 +31,21 @@ public class FibonacciHeap {
         size++;
     }
 
+    /**
+     * @return true if and only if the heap is empty.
+     * @comp O(1)
+     */
     public boolean isEmpty() {
         return (this.min == null || this.size == 0);
     }
 
     /**
-     * public HeapNode insert(int key)
-     * <p>
      * Creates a node (of type HeapNode) which contains the given key, and inserts it into the heap.
      *
-     * @param key the key being added to the heap.
-     * @return a new heap with that one key.
+     * @param key a distinct integer key.
+     * @return a pointer to the node which was inserted into the heap.
+     * @pre The heap does not contain the input key.
+     * @comp O(1)
      */
     public HeapNode insert(int key) {
         HeapNode node = new HeapNode(key);
@@ -81,9 +80,11 @@ public class FibonacciHeap {
     }
 
     /**
-     * public void deleteMin()
-     * <p>
      * Deletes the node containing the minimum key.
+     *
+     * @pre {@literal !isEmpty() && findMin().getKey() == k for some integer k}
+     * @post {@literal isEmpty() || findMin().getKey() >= k}
+     * @comp O(log n) where n=size(). Amortized cost is O(1).
      */
     public void deleteMin() {
         if (this.isEmpty())
@@ -138,13 +139,12 @@ public class FibonacciHeap {
      *
      * @param A binomial tree of rank r
      * @param B binomial tree of rank r
-     * @pre A != null && B != null
-     * @pre !A.isEmpty() && !B.isEmpty()
-     * @pre A.findMin().getKey() < B.findMin().getKey() || A.findMin().getKey() > B.findMin().getKey()
-     * @pre A.getParent() == null && B.getParent() == null
-     * @pre A.getRank() == B.getRank()
-     * @post (A.getLeftmostChild () == B && A.getRank() == r+1 && A.getParent() == null) ||
-     * || (B.getLeftmostChild() == A && B.getRank() == r+1 && B.getParent() == null)
+     * @pre {@literal A != null && B != null, !A.isEmpty() && !B.isEmpty(),
+     * A.findMin().getKey() < B.findMin().getKey() || A.findMin().getKey() > B.findMin().getKey(),
+     * A.getParent() == null && B.getParent() == null,
+     * A.getRank() == B.getRank()}
+     * @post {@literal (A.getLeftmostChild() == B && A.getRank() == r+1 && A.getParent() == null) || (B.getLeftmostChild() == A && B.getRank() == r+1 && B.getParent() == null)}
+     * @comp O(1)
      * @
      */
     private HeapNode linkTrees(HeapNode A, HeapNode B) {
@@ -178,15 +178,15 @@ public class FibonacciHeap {
     /**
      * Consolidates the list of trees in this heap, such that
      * the heap does not have two trees of the same rank anymore.
-     * IF the following conditions are met before running the function:
-     * The heap contains the following keys (key 1,...,key n)
-     * The heap is constructed by the following list of independent binomial trees (T1,...,Tk)
-     * m is the binary representation of k, s.t. the MSB is the rightmost bit.
-     * m=m(1)m(2)...m(j), j = Math.Ceil(Math.log(k+1)/Math.log(2))
-     * THEN the following conditions will be applied:
-     * The heap contains the following keys (key 1,...,key n)
-     * The heap is constructed by a list of binomial trees (B1,...,Bj) s.t. Bi != null iff m(i) != 0
-     * this.min.getKey() <= Bi.getKey() for all B1,...,Bj
+     *
+     * @pre The heap contains the following keys (key 1,...,key n).
+     * @pre The heap is constructed by the following list of independent binomial trees (T1,...,Tk)
+     * @pre m is the binary representation of k, s.t. the MSB is the rightmost bit.
+     * @pre m=m(1)m(2)...m(j), j = Math.Ceil(Math.log(k+1)/Math.log(2))
+     * @post The heap contains the following keys (key 1,...,key n).
+     * @post The heap is constructed by a list of binomial trees (B1,...,Bj) s.t. Bi != null iff m(i) != 0
+     * @post this.min.getKey() <= Bi.getKey() for all B1,...,Bj
+     * @comp O(log n) where n=size()
      */
     private void consolidate() {
         Iterator<HeapNode> iter = this.min.iterator();
@@ -241,9 +241,6 @@ public class FibonacciHeap {
     }
 
     /**
-     * public HeapNode findMin()
-     * <p>
-     *
      * @return the node of the heap whose key is minimal.
      */
     public HeapNode findMin() {
@@ -251,15 +248,15 @@ public class FibonacciHeap {
     }
 
     /**
-     * public void meld (FibonacciHeap heap2)
-     * <p>
      * Melds the heap with heap2
      *
      * @param heap2 the heap being merged
+     * @pre {@literal heap2 != null && !heap2.isEmpty()}
      * @post this.getLeftmostChild().getPrev() == heap2.getRightmostChild()
      * @post this.getRightmostChild().getNext() == heap2.getLeftmostChild()
      * @post this.getRightmostChild().getNext() == heap2.getLeftmostChild()
      * @post this.getRightmostChild() == heap2.getLeftmostChild().getPrev()
+     * @comp O(1)
      */
     public void meld(FibonacciHeap heap2) {
         // First, we have to update the pointer to the minimum node.
@@ -294,20 +291,16 @@ public class FibonacciHeap {
     }
 
     /**
-     * public int size()
-     * <p>
-     *
      * @return the number of elements in the heap
+     * @comp O(1)
      */
     public int size() {
         return this.size;
     }
 
     /**
-     * public int[] countersRep()
-     * <p>
-     *
      * @return a counters array, where the value of the i-th entry is the number of trees of order i in the heap.
+     * @comp O(number of trees), which is O(n) in worst case, and Ω(log n) if the heap is consolidated. (n=size())
      */
     public int[] countersRep() {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
@@ -326,7 +319,7 @@ public class FibonacciHeap {
     }
 
     /**
-     * @return a int array ranksCount, s.t. for each index 0<=i<=ranksCount.length-1: ranksCount[i] == the number of trees and subtrees of rank i in the heap.
+     * @return {@literal a int array ranksCount, s.t. for each index 0<=i<=ranksCount.length-1: ranksCount[i] == the number of trees and subtrees of rank i in the heap.}
      */
     public int[] countAllRanks() {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
@@ -355,12 +348,12 @@ public class FibonacciHeap {
     }
 
     /**
-     * public void delete(HeapNode x)
-     * <p>
      * Deletes the node x from the heap.
      *
      * @param x the node being removed from the heap.
-     * @post x is no longer part of the heap.
+     * @pre x is one of this heap's nodes.
+     * @post x is no longer in the heap.
+     * @comp O(log n)
      */
     public void delete(HeapNode x) {
         int delta = x.getKey() - this.min.getKey() + 1; // >= 0
@@ -369,15 +362,13 @@ public class FibonacciHeap {
     }
 
     /**
-     * public void decreaseKey(HeapNode x, int delta)
-     * <p>
-     * The function decreases the key of the node x by delta. The structure of the heap should be updated
-     * to reflect this chage (for example, the cascading cuts procedure should be applied if needed).
+     * The function decreases the key of the node x by delta.
      *
      * @param x     the node whose key is being decreased.
      * @param delta the size of decrement.
-     * @pre x != null && delta >= 0 && [x.getKey() == k for some 0 <= k]
-     * @post x.getKey() == k - delta
+     * @pre {@literal x != null && delta >= 0 && [x.getKey() == k for some 0 <= k]}
+     * @post {@literal x.getKey() == k - delta}
+     * @comp O(log n)
      */
     public void decreaseKey(HeapNode x, int delta) {
         if (delta <= 0 || x == null)
@@ -429,48 +420,45 @@ public class FibonacciHeap {
     }
 
     /**
-     * public int potential()
-     * <p>
      * The potential equals to the number of trees in the heap plus twice the number of marked nodes in the heap.
      *
      * @return the current potential of the heap, which is: #trees + 2*#marked
+     * @comp O(1)
      */
     public int potential() {
         return totalTrees + 2 * totalMarkedTrees; // should be replaced by student code
     }
 
     /**
-     * public static int totalLinks()
-     * <p>
      * A link operation is the operation which gets as input two trees of the same rank, and generates a tree of
      * rank bigger by one, by hanging the tree which has larger value in its root on the tree which has smaller value
      * its root.
      *
      * @return the total number of link operations made during the run-time of the program.
+     * @comp O(1)
      */
     public static int totalLinks() {
         return totalLinks;
     }
 
     /**
-     * public static int totalCuts()
-     * <p>
      * A cut operation is the operation which diconnects a subtree from its parent (during decreaseKey/delete methods).
      *
      * @return the total number of cut operations made during the run-time of the program.
+     * @comp O(1)
      */
     public static int totalCuts() {
         return totalCuts;
     }
 
     /**
-     * public static int[] kMin(FibonacciHeap H, int k)
-     * <p>
      * The function should run in O(k(logk + deg(H)).
      *
      * @param H a single-tree binomial heap of rank r.
      * @param k the number of keys fetched from the tree.
      * @return the k minimal elements in a binomial tree H.
+     * @pre {@literal H != null && !H.isEmpty() && k >= 0}
+     * @comp O(k ( logk + deg ( H))) where deg(H)=H.findMin().getRank()
      */
     public static int[] kMin(FibonacciHeap H, int k) {
         if (H == null || H.isEmpty() || k <= 0)
@@ -526,8 +514,6 @@ public class FibonacciHeap {
     }
 
     /**
-     * public class HeapNode
-     * <p>
      * If you wish to implement classes other than FibonacciHeap
      * (for example HeapNode), do it in this file, not in
      * another file
@@ -542,6 +528,10 @@ public class FibonacciHeap {
         protected HeapNode prev;
         protected HeapNode parent;
 
+        /**
+         * @param key the new node's desired key.
+         * @comp O(1)
+         */
         public HeapNode(int key) {
             this.key = key;
             this.mark = false;
@@ -549,22 +539,42 @@ public class FibonacciHeap {
             this.prev = this;
         }
 
+        /**
+         * @return The key held by this node.
+         * @comp O(1)
+         */
         public int getKey() {
             return key;
         }
 
+        /**
+         * @return The rank of this node.
+         * @comp O(1)
+         */
         public int getRank() {
             return rank;
         }
 
+        /**
+         * @return True iff this node is marked.
+         * @comp O(1)
+         */
         public boolean isMark() {
             return mark;
         }
 
+        /**
+         * @return The next node in the circular HeapNode linked list.
+         * @comp O(1)
+         */
         public HeapNode getNext() {
             return this.next;
         }
 
+        /**
+         * @return The previous node in the circular HeapNode linked list.
+         * @comp O(1)
+         */
         public HeapNode getPrev() {
             return this.prev;
         }
@@ -577,9 +587,9 @@ public class FibonacciHeap {
          * Inserts newLeft between this.getPrev() and this.
          *
          * @param newLeft the node being attached to the left of this node.
-         * @pre newLeft doesn't belong to this list.
-         * @pre newLeft != null
-         * @post newLeft.getNext() == this && newLeft == this.getPrev()
+         * @pre {@literal newLeft doesn't belong to this list && newLeft != null}
+         * @post {@literal newLeft.getNext() == this && newLeft == this.getPrev()}
+         * @comp O(1)
          */
         protected void insertFromLeft(HeapNode newLeft) {
             HeapNode oldLeft = this.prev;
@@ -594,9 +604,9 @@ public class FibonacciHeap {
          * Inserts newLeft between this and this.getRight().
          *
          * @param newRight the node being attached to the right of this node.
-         * @pre newRight doesn't belong to this list.
-         * @pre newRight != null
-         * @post this.getNext() == newRight && this == newRight.getPrev()
+         * @pre {@literal newRight doesn't belong to this list && newRight != null}
+         * @post {@literal this.getNext() == newRight && this == newRight.getPrev()}
+         * @comp O(1)
          */
         protected void insertFromRight(HeapNode newRight) {
             HeapNode oldRight = this.next;
@@ -616,6 +626,9 @@ public class FibonacciHeap {
          * It does not modify the size property of this heap.
          *
          * @param trees the list of trees being concatenated after this node.
+         * @pre trees != null
+         * @post Trees list is linked to the end of this list in a circular fashion, when this node is considered as the first item in the list.
+         * @comp O(1)
          */
         protected void concat(HeapNode trees) {
             if (trees == null)
@@ -640,6 +653,8 @@ public class FibonacciHeap {
          * It does not modify the size property of this heap.
          *
          * @param trees the list of trees being concatenated before this node.
+         * @post This list is linked to the end of trees list in a circular fashion, when trees node is considered as the first item in the trees list.
+         * @comp O(1)
          */
         protected void reverseConcat(HeapNode trees) {
             if (trees == null)
@@ -657,6 +672,7 @@ public class FibonacciHeap {
 
         /**
          * @return the last child of this node (rightmost).
+         * @comp O(1)
          */
         public HeapNode getRightmostChild() {
             if (this.child == null)
@@ -666,6 +682,7 @@ public class FibonacciHeap {
 
         /**
          * @return the first child of this node (leftmost).
+         * @comp O(1)
          */
         public HeapNode getLeftmostChild() {
             if (this.child == null)
@@ -676,6 +693,7 @@ public class FibonacciHeap {
         /**
          * @return a new iterator, to iterate over all the nodes at the same depth in the tree.
          * If $this is a root, then the iteration will be over all the roots in the heap.
+         * @comp O(1)
          */
         public Iterator<HeapNode> iterator() {
             HeapNode start;
