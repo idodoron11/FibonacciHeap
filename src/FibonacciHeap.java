@@ -631,17 +631,7 @@ public class FibonacciHeap {
          * @comp O(1)
          */
         protected void concat(HeapNode trees) {
-            if (trees == null)
-                return;
-            HeapNode thisFirst = this;
-            HeapNode thisLast = this.prev;
-            HeapNode listFirst = trees;
-            HeapNode listLast = trees.prev;
-
-            thisLast.next = listFirst; // FL -> LF
-            listFirst.prev = thisLast; // FL <- LF
-            listLast.next = thisFirst; // LL -> FF
-            thisFirst.prev = listFirst; // LL <- FF
+            concatHelper(this, trees);
         }
 
         /**
@@ -657,17 +647,21 @@ public class FibonacciHeap {
          * @comp O(1)
          */
         protected void reverseConcat(HeapNode trees) {
-            if (trees == null)
-                return;
-            HeapNode thisFirst = this;
-            HeapNode thisLast = this.prev;
-            HeapNode listFirst = trees;
-            HeapNode listLast = trees.prev;
+            concatHelper(trees, this);
+        }
 
-            listLast.next = thisFirst; // FL -> LF
-            thisFirst.prev = listLast; // FL <- LF
-            thisLast.next = listFirst; // LL -> FF
-            listFirst.prev = thisFirst; // LL <- FF
+        private void concatHelper(HeapNode first, HeapNode last) {
+            if (last == null || first == null)
+                return;
+            HeapNode thisFirst = first;
+            HeapNode thisLast = first.prev;
+            HeapNode listFirst = last;
+            HeapNode listLast = last.prev;
+
+            thisLast.next = listFirst; // FL -> LF
+            listFirst.prev = thisLast; // FL <- LF
+            listLast.next = thisFirst; // LL -> FF
+            thisFirst.prev = listFirst; // LL <- FF
         }
 
         /**
