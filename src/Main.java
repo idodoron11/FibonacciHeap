@@ -11,7 +11,7 @@ public class Main {
                 System.out.println("Empty Heap");
             else
                 System.out.println("Min=" + heap.findMin().getKey());
-            System.out.println("Inseting " + insertByOrder[i]);
+            System.out.println("Inserting " + insertByOrder[i]);
             heap.insert(insertByOrder[i]);
         }
         heap.deleteMin();
