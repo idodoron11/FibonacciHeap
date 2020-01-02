@@ -84,7 +84,7 @@ public class FibonacciHeap {
      *
      * @pre {@literal !isEmpty() && findMin().getKey() == k for some integer k}
      * @post {@literal isEmpty() || findMin().getKey() >= k}
-     * @comp O(log n) where n=size(). Amortized cost is O(1).
+     * @comp O(n) where n=size(). Amortized cost is O(log n).
      */
     public void deleteMin() {
         if (this.isEmpty())
@@ -242,6 +242,7 @@ public class FibonacciHeap {
 
     /**
      * @return the node of the heap whose key is minimal.
+     * @comp O(1)
      */
     public HeapNode findMin() {
         return this.min;
@@ -353,7 +354,7 @@ public class FibonacciHeap {
      * @param x the node being removed from the heap.
      * @pre x is one of this heap's nodes.
      * @post x is no longer in the heap.
-     * @comp O(log n)
+     * @comp Worst Case: O(n). Amortized Cost: O(log n).
      */
     public void delete(HeapNode x) {
         int delta = x.getKey() - this.min.getKey() + 1; // >= 0
@@ -470,13 +471,20 @@ public class FibonacciHeap {
         if (k > size)
             k = size;
         int[] result = new int[k];
-        FibonacciHeap heap = extractToHeap(tree, k); // This process takes O(n) at most.
-        // If the heap contains r keys, than the amortized cost of deleteMin() is O(log r).
-        // Thus, the total amortized cost of the loop is O(2k) + O(k(log r)) = O(k(log r)) <= O(k(log n))
-        for (int i = 0; i < result.length && !heap.isEmpty(); i++) {
-            int minimum = heap.findMin().getKey();
-            heap.deleteMin();
-            result[i] = minimum;
+        FibonacciHeap heap = new FibonacciHeap();
+        HeapNode next = H.findMin();
+
+        for (int i = 0; i < k; i++) { // k iterations
+            if (next != null)
+                for (Iterator<HeapNode> iter = next.iterator(); iter.hasNext(); ) { // rank nCr next.getParent().getRank() iterations.
+                    next = iter.next();
+                    HeapNode node = heap.insert(next.getKey()); // O(1)
+                    node.setFreePointer(next);
+                }
+            next = heap.findMin().getFreePointer();
+            result[i] = next.getKey();
+            heap.deleteMin(); // O(log n) amortized cost.
+            next = next.child;
         }
 
         return result;
@@ -490,7 +498,7 @@ public class FibonacciHeap {
 
     /**
      * @param node the root of the binomial tree.
-     * @return A new heap, with copies of the keys node holds.
+     * @return A new fibonacci heap, with copies of the keys node holds.
      */
     public static FibonacciHeap extractToHeap(HeapNode node) {
         int k = (int) Math.pow(2, node.getRank());
@@ -523,6 +531,7 @@ public class FibonacciHeap {
         protected int key;
         protected int rank; // number of children
         protected boolean mark;
+        protected HeapNode freePointer;
         protected HeapNode child;
         protected HeapNode next;
         protected HeapNode prev;
@@ -537,6 +546,15 @@ public class FibonacciHeap {
             this.mark = false;
             this.next = this;
             this.prev = this;
+            this.freePointer = null;
+        }
+
+        public HeapNode getFreePointer() {
+            return freePointer;
+        }
+
+        public void setFreePointer(HeapNode freePointer) {
+            this.freePointer = freePointer;
         }
 
         /**

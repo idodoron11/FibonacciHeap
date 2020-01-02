@@ -3,19 +3,32 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args) {
+        System.out.println("Tree Size\tStart\tEnd\tEnd-Start\tValid");
+        for (int k = 0; k <= 25; k++) {
+            int size = (int) Math.pow(2, k);
+            runTest1(size, size / 2);
+        }
+    }
+
+    public static void runTest1(int size, int k) {
         FibonacciHeap heap = new FibonacciHeap();
-        int[] insertByOrder = new int[]{7, 6, 5, 8, 4, 3, 9, 2, 1, 1, 19, 17, 15, 13, 12, 11, 21};
-        for (int i = 0; i < insertByOrder.length; i++) {
-            FibonacciHeap.HeapNode min = heap.findMin();
-            if (min == null)
-                System.out.println("Empty Heap");
-            else
-                System.out.println("Min=" + heap.findMin().getKey());
-            System.out.println("Inserting " + insertByOrder[i]);
-            heap.insert(insertByOrder[i]);
+        ArrayList<Integer> insertByOrder = new ArrayList<>();
+        for (int i = 0; i <= size; i++)
+            insertByOrder.add(i);
+        Collections.shuffle(insertByOrder);
+        for (int i = 0; i < insertByOrder.size(); i++) {
+            heap.insert(insertByOrder.get(i));
         }
         heap.deleteMin();
-        int[] list = heap.kMin(heap, 10);
-        System.out.println(Arrays.toString(list));
+        long start = System.currentTimeMillis();
+        int[] list = heap.kMin(heap, k);
+        long end = System.currentTimeMillis();
+        Collections.sort(insertByOrder);
+        insertByOrder.remove(0);
+        boolean valid = true;
+        for (int i = 0; i < k; i++)
+            if (insertByOrder.get(i) != list[i])
+                valid = false;
+        System.out.println(size + "\t" + start + "\t" + end + "\t" + (end - start) + "\t" + valid);
     }
 }
