@@ -8,7 +8,9 @@ import java.util.Iterator;
 public class FibonacciHeap {
 
     private HeapNode min; // Pointer to the minimal node in the heap.
-    // The min is assumed to be the "first" tree in the circular list of trees.
+    private HeapNode firstTree; // Pointer to the first tree. (Unnecessarily the minimal)
+    // According to the instructions, every new tree should be inserted to the left
+    // of "firstTree", and not to the left of "min".
     private int size; // How many nodes are in this heap.
     private static int totalLinks = 0;
     private static int totalCuts = 0;
@@ -20,6 +22,7 @@ public class FibonacciHeap {
      */
     public FibonacciHeap() {
         min = null;
+        firstTree = null;
         size = 0;
     }
 
@@ -27,6 +30,7 @@ public class FibonacciHeap {
     protected FibonacciHeap(int key) {
         this();
         min = new HeapNode(key);
+        firstTree = min;
         totalTreesInspector(1, "first tree insertion");
         size++;
     }
@@ -60,10 +64,11 @@ public class FibonacciHeap {
     }
 
     private HeapNode insert(HeapNode node) {
-        if (this.isEmpty())
+        if (this.isEmpty()) {
             this.min = node;
-        else {
-            HeapNode first = this.min;
+            this.firstTree = node;
+        } else {
+            HeapNode first = this.firstTree;
             HeapNode last = first.prev;
             node.next = first; // node -> first
             first.prev = node; // node <- first
@@ -71,7 +76,7 @@ public class FibonacciHeap {
             node.prev = last; // last <- node
             node.parent = null;
 
-            if (node.getKey() < first.getKey()) // smaller than the current minimum.
+            if (node.getKey() < this.min.getKey()) // smaller than the current minimum.
                 this.min = node;
         }
         totalTreesInspector(1, "new tree insert");
@@ -98,6 +103,7 @@ public class FibonacciHeap {
             min.next = null;
             min.prev = null;
             this.min = minChild;
+            this.firstTree = minChild;
             size--;
             totalTreesInspector(-1, "the minimum was deleted, so there's one less tree.");
             if (this.isEmpty())
@@ -113,21 +119,28 @@ public class FibonacciHeap {
             }
             this.min = minimum;
         } else {
-            HeapNode subTrees = min.child;
+            HeapNode subTreesFirst = min.child;
             this.min.next = null;
             this.min.prev = null;
             minPrev.next = minNext;
             minNext.prev = minPrev;
             this.min = minPrev;
+            this.firstTree = minPrev;
             size--;
             totalTreesInspector(-1, "the minimum was deleted, so there's one less tree.");
             totalTreesInspector(min.rank, "the minimum was of rank " + min.rank + " which is also the number of children it had.");
+            if (subTreesFirst != null) {
+                HeapNode subTreesLast = subTreesFirst.prev;
+                minPrev.next = subTreesFirst;
+                subTreesFirst.prev = minPrev;
+                subTreesLast.next = minNext;
+                minNext.prev = subTreesLast;
+            }
             /*
              * At this point the minimum doesn't necessarily points
-             * to th minimal node, but the consolidation is going to
+             * to the minimal node, but the consolidation is going to
              * fix it.
              */
-            this.min.concat(subTrees);
             consolidate();
         }
     }
@@ -193,7 +206,7 @@ public class FibonacciHeap {
         int length = (int) Math.ceil(Math.log(this.size + 1) / Math.log(2));
         HeapNode[] bucket = new HeapNode[length];
         HeapNode minimum = null;
-        HeapNode newTrees = null;
+        HeapNode newFirstTree = null;
 
         HeapNode tree = null;
         if (iter.hasNext())
@@ -219,17 +232,16 @@ public class FibonacciHeap {
             HeapNode bucketTree = bucket[i];
             if (bucketTree == null)
                 continue;
-            if (newTrees == null) {
-                newTrees = bucketTree;
+            if (newFirstTree == null) {
+                newFirstTree = bucketTree;
                 bucketTree.next = bucketTree;
                 bucketTree.prev = bucketTree;
             } else {
-                HeapNode firstItem = newTrees;
-                HeapNode lastItem = newTrees.prev;
+                HeapNode lastItem = newFirstTree.prev;
                 lastItem.next = bucketTree;
                 bucketTree.prev = lastItem;
-                bucketTree.next = firstItem;
-                firstItem.prev = bucketTree;
+                bucketTree.next = newFirstTree;
+                newFirstTree.prev = bucketTree;
             }
             bucketTree.parent = null;
             if (minimum == null || bucketTree.getKey() < minimum.getKey())
@@ -238,6 +250,7 @@ public class FibonacciHeap {
         }
 
         this.min = minimum;
+        this.firstTree = newFirstTree;
     }
 
     /**
@@ -668,18 +681,16 @@ public class FibonacciHeap {
             concatHelper(trees, this);
         }
 
-        private void concatHelper(HeapNode first, HeapNode last) {
-            if (last == null || first == null)
+        private void concatHelper(HeapNode firstListFirst, HeapNode lastListFirst) {
+            if (lastListFirst == null || firstListFirst == null)
                 return;
-            HeapNode thisFirst = first;
-            HeapNode thisLast = first.prev;
-            HeapNode listFirst = last;
-            HeapNode listLast = last.prev;
+            HeapNode firstListLast = firstListFirst.prev;
+            HeapNode lastListLast = lastListFirst.prev;
 
-            thisLast.next = listFirst; // FL -> LF
-            listFirst.prev = thisLast; // FL <- LF
-            listLast.next = thisFirst; // LL -> FF
-            thisFirst.prev = listFirst; // LL <- FF
+            firstListLast.next = lastListFirst; // FL -> LF
+            lastListFirst.prev = firstListLast; // FL <- LF
+            lastListLast.next = firstListFirst; // LL -> FF
+            firstListFirst.prev = lastListFirst; // LL <- FF
         }
 
         /**
