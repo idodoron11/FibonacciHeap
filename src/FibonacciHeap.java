@@ -4,6 +4,9 @@ import java.util.Iterator;
  * FibonacciHeap
  * <p>
  * An implementation of fibonacci heap over integers.
+ *
+ * @author Ido Doron
+ * @version 1.0
  */
 public class FibonacciHeap {
 
